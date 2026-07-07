@@ -117,3 +117,44 @@ Impact (blast radius on shipping safety) × Frequency (how often it occurs acros
 ## Summary
 
 The pipeline is effectively non-functional: a **96.7% failure rate** driven overwhelmingly by a single misconfigured `test` job that never installs dependencies. Real defects are invisible under the noise, a security scan has been silently disabled, and the team has normalized red CI and direct-to-`main` hotfixes. See `CI-HEALTH-REPORT.md` for the structured observations, risk table, and prioritized corrective actions.
+
+## Task 3 - Workflow Observations
+
+### 1. Workflow Configuration Quality
+**Finding:** The `test` job fails due to missing dependencies.  
+**Evidence:** **25/30 runs** failed with **"jest: not found"**, including **run #28**.  
+**Impact:** CI cannot reliably validate code changes.
+
+### 2. Test Reliability
+**Finding:** The gateway integration test is flaky.  
+**Evidence:** **Run #23** failed, while **run #24** passed on the same commit due to a timeout.  
+**Impact:** Developers cannot fully trust test results.
+
+### 3. Merge Safety Indicators
+**Finding:** Security scanning is disabled.  
+**Evidence:** `security-scan.yml` contains **`if: false`** and **0 scan runs** were recorded.  
+**Impact:** Vulnerabilities may be merged undetected.
+
+### 4. Validation Instability
+**Finding:** The workflow uses outdated build practices.  
+**Evidence:** Uses **`node-version: '16'`**, **`npm install`**, and direct pushes to `main`.  
+**Impact:** Builds are less reliable and reproducible.
+
+## Task 4 - Risk Analysis
+
+| Observation | Finding Summary | Risk Category | Severity |
+|------------|-----------------|---------------|----------|
+| 1 | `test` job fails with `jest: not found` | Workflow Configuration Quality | Critical |
+| 2 | Gateway integration test is flaky | Test Reliability | High |
+| 3 | Security scan is disabled | Merge Safety Indicators | Critical |
+| 4 | Outdated build practices (`Node 16`, `npm install`) | Validation Instability | High |
+
+## Recommendations
+
+**P1 – Observation 1:** Install dependencies before running tests by adding `npm ci` to the GitHub Actions workflow (`.github/workflows/ci.yml`). **Outcome:** CI executes tests successfully instead of failing with `jest: not found`.
+
+**P1 – Observation 3:** Re-enable the security scan by removing `if: false` from `security-scan.yml`. **Outcome:** Every push is automatically checked for security issues.
+
+**P2 – Observation 2:** Stabilize or mock the gateway integration test in the test configuration. **Outcome:** Fewer flaky failures and more consistent CI results.
+
+**P2 – Observation 4:** Upgrade to a supported Node.js version and replace `npm install` with `npm ci` in `.github/workflows/ci.yml`. **Outcome:** Faster, reproducible builds with more reliable dependency installation.
